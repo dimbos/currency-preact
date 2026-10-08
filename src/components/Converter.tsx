@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks';
-import { Button, Card, InputNumber, Select, Space, Typography } from 'antd';
+import { Button, Card, Input, InputNumber, Select, Space, Typography } from 'antd';
 import { SwapOutlined } from '@ant-design/icons';
 import { CURRENCIES, CURRENCY_META, formatRub, type Currency, type RubRates } from '../api';
 
@@ -35,12 +35,11 @@ export function Converter({ rates }: { rates: RubRates }) {
     <Card title="Конвертер" size="small">
       <Space direction="vertical" size={12} style={{ width: '100%' }}>
         <Space.Compact block>
-          <InputNumber<string>
+          <Input
             style={{ flex: 1, width: '100%' }}
             size="large"
-            stringMode
             value={amount}
-            onChange={(v) => setAmount((v ?? '').replace(/[^\d.,]/g, ''))}
+            onChange={(e) => setAmount(e.currentTarget.value.replace(/[^\d.,]/g, ''))}
             placeholder="Сумма"
             inputMode="decimal"
           />
