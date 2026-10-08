@@ -43,6 +43,7 @@ export function Converter({ rates }: { rates: RubRates }) {
             onChange={(v) => setAmount(v)}
             placeholder="Сумма"
             inputMode="decimal"
+            parser={(v) => v?.replace(/[^\d.,]/g, '') as unknown as number}
           />
           <Select
             size="large"
