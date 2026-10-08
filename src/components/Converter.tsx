@@ -1,34 +1,39 @@
 import { useState } from 'preact/hooks';
-import { Card, InputNumber, Segmented, Select, Space, Typography } from 'antd';
+import { Button, Card, InputNumber, Select, Space, Typography } from 'antd';
 import { SwapOutlined } from '@ant-design/icons';
 import { CURRENCIES, CURRENCY_META, formatRub, type Currency, type RubRates } from '../api';
 
-type Direction = 'rub-to-cur' | 'cur-to-rub';
+type AnyCurrency = Currency | 'RUB';
+
+const ALL_CURRENCIES: AnyCurrency[] = ['RUB', ...CURRENCIES];
+
+const META: Record<AnyCurrency, string> = {
+  RUB: 'Российский рубль',
+  USD: CURRENCY_META.USD.name,
+  EUR: CURRENCY_META.EUR.name,
+  CNY: CURRENCY_META.CNY.name,
+};
+
+function rateInRub(c: AnyCurrency, rates: RubRates): number {
+  return c === 'RUB' ? 1 : rates[c];
+}
 
 export function Converter({ rates }: { rates: RubRates }) {
   const [amount, setAmount] = useState<number | null>(1000);
-  const [currency, setCurrency] = useState<Currency>('USD');
-  const [direction, setDirection] = useState<Direction>('rub-to-cur');
+  const [from, setFrom] = useState<AnyCurrency>('RUB');
+  const [to, setTo] = useState<AnyCurrency>('USD');
 
-  const rate = rates[currency];
   const value = amount ?? 0;
-  const result =
-    direction === 'rub-to-cur'
-      ? `${(rate ? value / rate : 0).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`
-      : `${formatRub(value * rate)} ₽`;
+  const fromRate = rateInRub(from, rates);
+  const toRate = rateInRub(to, rates);
+  const converted = toRate ? (value * fromRate) / toRate : 0;
+  const result = `${converted.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${to}`;
+
+  const currencyOptions = ALL_CURRENCIES.map((c) => ({ value: c, label: c }));
 
   return (
     <Card title="Конвертер" size="small">
       <Space direction="vertical" size={12} style={{ width: '100%' }}>
-        <Segmented
-          block
-          value={direction}
-          onChange={(v) => setDirection(v as Direction)}
-          options={[
-            { label: 'RUB → валюта', value: 'rub-to-cur' },
-            { label: 'Валюта → RUB', value: 'cur-to-rub' },
-          ]}
-        />
         <Space.Compact block>
           <InputNumber
             style={{ flex: 1, width: '100%' }}
@@ -41,10 +46,37 @@ export function Converter({ rates }: { rates: RubRates }) {
           />
           <Select
             size="large"
-            value={currency}
-            onChange={setCurrency}
+            value={from}
+            onChange={setFrom}
             style={{ width: 110 }}
-            options={CURRENCIES.map((c) => ({ value: c, label: c }))}
+            options={currencyOptions}
+          />
+        </Space.Compact>
+        <div style={{ textAlign: 'center' }}>
+          <Button
+            type="text"
+            icon={<SwapOutlined rotate={90} />}
+            onClick={() => {
+              setFrom(to);
+              setTo(from);
+            }}
+          />
+        </div>
+        <Space.Compact block>
+          <InputNumber
+            style={{ flex: 1, width: '100%' }}
+            size="large"
+            value={converted}
+            readOnly
+            placeholder="Результат"
+            inputMode="decimal"
+          />
+          <Select
+            size="large"
+            value={to}
+            onChange={setTo}
+            style={{ width: 110 }}
+            options={currencyOptions}
           />
         </Space.Compact>
         <div className="converter-result">
@@ -52,7 +84,9 @@ export function Converter({ rates }: { rates: RubRates }) {
           {result}
         </div>
         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          1 {currency} ({CURRENCY_META[currency].name}) = {formatRub(rate)} ₽
+          1 {from} ({META[from]}) ={' '}
+          {(toRate ? fromRate / toRate : 0).toLocaleString('ru-RU', { maximumFractionDigits: 4 })}{' '}
+          {to} · 1 USD = {formatRub(rates.USD)} ₽
         </Typography.Text>
       </Space>
     </Card>
