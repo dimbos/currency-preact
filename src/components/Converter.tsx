@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks';
-import { Button, Card, Input, InputNumber, Select, Space, Typography } from 'antd';
+import { Button, Card, Input, Select, Space, Typography } from 'antd';
 import { SwapOutlined } from '@ant-design/icons';
 import { CURRENCIES, CURRENCY_META, formatRub, type Currency, type RubRates } from '../api';
 
@@ -16,6 +16,14 @@ const META: Record<AnyCurrency, string> = {
 
 function rateInRub(c: AnyCurrency, rates: RubRates): number {
   return c === 'RUB' ? 1 : rates[c];
+}
+
+/** Группирует целую часть по разрядам (1 000 000), дробную оставляет как введено */
+function groupAmount(raw: string): string {
+  const sepMatch = /[.,]/.exec(raw);
+  const intPart = sepMatch ? raw.slice(0, sepMatch.index) : raw;
+  const fracPart = sepMatch ? raw.slice(sepMatch.index) : '';
+  return intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + fracPart;
 }
 
 export function Converter({ rates }: { rates: RubRates }) {
@@ -38,7 +46,7 @@ export function Converter({ rates }: { rates: RubRates }) {
           <Input
             style={{ flex: 1, width: '100%' }}
             size="large"
-            value={amount}
+            value={groupAmount(amount)}
             onChange={(e) => setAmount(e.currentTarget.value.replace(/[^\d.,]/g, ''))}
             placeholder="Сумма"
             inputMode="decimal"
@@ -62,10 +70,10 @@ export function Converter({ rates }: { rates: RubRates }) {
           />
         </div>
         <Space.Compact block>
-          <InputNumber
+          <Input
             style={{ flex: 1, width: '100%' }}
             size="large"
-            value={converted}
+            value={converted.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             readOnly
             placeholder="Результат"
             inputMode="decimal"
