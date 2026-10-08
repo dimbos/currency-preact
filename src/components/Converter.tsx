@@ -19,11 +19,11 @@ function rateInRub(c: AnyCurrency, rates: RubRates): number {
 }
 
 export function Converter({ rates }: { rates: RubRates }) {
-  const [amount, setAmount] = useState<number | null>(1000);
+  const [amount, setAmount] = useState('1000');
   const [from, setFrom] = useState<AnyCurrency>('RUB');
   const [to, setTo] = useState<AnyCurrency>('USD');
 
-  const value = amount ?? 0;
+  const value = Number(amount.replace(',', '.')) || 0;
   const fromRate = rateInRub(from, rates);
   const toRate = rateInRub(to, rates);
   const converted = toRate ? (value * fromRate) / toRate : 0;
@@ -35,15 +35,14 @@ export function Converter({ rates }: { rates: RubRates }) {
     <Card title="Конвертер" size="small">
       <Space direction="vertical" size={12} style={{ width: '100%' }}>
         <Space.Compact block>
-          <InputNumber
+          <InputNumber<string>
             style={{ flex: 1, width: '100%' }}
             size="large"
-            min={0}
+            stringMode
             value={amount}
-            onChange={(v) => setAmount(v)}
+            onChange={(v) => setAmount((v ?? '').replace(/[^\d.,]/g, ''))}
             placeholder="Сумма"
             inputMode="decimal"
-            parser={(v) => v?.replace(/[^\d.,]/g, '') as unknown as number}
           />
           <Select
             size="large"
