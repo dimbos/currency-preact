@@ -3,7 +3,7 @@ import { Alert, App as AntdApp, ConfigProvider, Spin, Typography } from 'antd';
 import ruRU from 'antd/locale/ru_RU';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
-import { getHistoryRates, getTodayRates, type HistoryEntry, type RatesResponse } from './api';
+import { getRatesBundle, type HistoryEntry, type RatesResponse } from './api';
 import { Converter } from './components/Converter';
 import { RatesToday } from './components/RatesToday';
 import { HistoryTable } from './components/HistoryTable';
@@ -16,8 +16,8 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([getTodayRates(), getHistoryRates(5)])
-      .then(([t, h]) => {
+    getRatesBundle()
+      .then(({ today: t, history: h }) => {
         setToday(t);
         setHistory(h);
       })

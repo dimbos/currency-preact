@@ -17,9 +17,11 @@ export interface RatesResponse {
   rates: RubRates;
 }
 
-// В dev-режиме запросы идут через прокси Vite (/cbr → cbr-xml-daily.ru),
-// чтобы избежать блокировок CORS на локальной машине.
-// В продакшн-сборке (GitHub Pages) — напрямую: у API ЦБ открыт CORS (*).
+// Запросы идут:
+// - в dev-режиме — через прокси Vite (/cbr → cbr-xml-daily.ru), чтобы избежать
+//   блокировок антивируса/CORS на локальной машине;
+// - в продакшне — статический rates.json со своего домена (обновляется GitHub
+//   Actions ежедневно), с фолбэком на прямой запрос к API ЦБ.
 const API_BASE = import.meta.env.DEV ? '/cbr' : 'https://www.cbr-xml-daily.ru';
 
 interface CbrResponse {
@@ -90,8 +92,39 @@ async function fetchHistoryFor(target: Date): Promise<HistoryEntry> {
   throw new Error(`Нет данных ЦБ около даты ${requestedDate}`);
 }
 
-export function formatRub(value: number): string {
-  return value.toLocaleString('ru-RU', {
+export interface StaticRates {
+  generatedAt: string;
+  today: RatesResponse;
+  history: HistoryEntry[];
+}
+
+export interface RatesBundle {
+  today: RatesResponse;
+  history: HistoryEntry[];
+}
+
+async function getStaticRates(): Promise<RatesBundle> {
+  const res = await fetch(`${import.meta.env.BASE_URL}rates.json`);
+  if (!res.ok) throw new Error(`Нет rates.json: HTTP ${res.status}`);
+  const data = (await res.json()) as StaticRates;
+  return { today: data.today, history: data.history };
+}
+
+/** Источник данных: в dev — живое API через прокси, в продакшне — rates.json
+ * со своего домена (фолбэк — прямой запрос к API ЦБ). */
+export async function getRatesBundle(): Promise<RatesBundle> {
+  if (!import.meta.env.DEV) {
+    try {
+      return await getStaticRates();
+    } catch {
+      // фолбэк на живое API ниже
+    }
+  }
+  const [today, history] = await Promise.all([getTodayRates(), getHistoryRates(5)]);
+  return { today, history };
+}
+
+export function formatRub(value: number): string {  return value.toLocaleString('ru-RU', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });

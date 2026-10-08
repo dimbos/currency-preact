@@ -3,6 +3,9 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
+  schedule:
+    # Ежедневно в 16:23 МСК — курс ЦБ на следующий день уже опубликован
+    - cron: '23 13 * * *'
   workflow_dispatch:
 
 permissions:
@@ -23,6 +26,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: node scripts/fetch-rates.mjs
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:
